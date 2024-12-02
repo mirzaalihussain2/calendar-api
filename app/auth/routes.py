@@ -29,15 +29,24 @@ def google_authorize():
     return redirect(authorization_url)
 
 @bp.route('/google/callback')
-@bp.route('/google/callback')
 def oauth2callback():
     flow = create_flow()
     authorization_response = request.url
     flow.fetch_token(authorization_response=authorization_response)
     
     credentials = flow.credentials
+    token_info = flow.oauth2session.token
+    
+    # Get user info from ID token
+    id_info = id_token.verify_oauth2_token(
+        token_info['id_token'],
+        requests.Request(), 
+        current_app.config['GOOGLE_CLIENT_ID']
+    )
+
     return jsonify({
         'token': credentials.token,
         'refresh_token': credentials.refresh_token,
         'scopes': credentials.scopes,
+        'user_info': id_info
     })
